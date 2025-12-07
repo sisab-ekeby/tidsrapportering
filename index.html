@@ -18,9 +18,8 @@
       --border-dark: #1f2937;
 
       --primary: #2563eb;   /* blå – Rapportera tid */
-      --danger: #dc2626;    /* röd – Rensa */
+      --danger: #dc2626;    /* röd – Spara / Rensa */
       --success: #16a34a;   /* grön – Skapa PDF */
-      --neutral: #6b7280;   /* grå – Spara tidsrad */
     }
 
     html {
@@ -72,7 +71,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .top-title {
@@ -96,7 +95,7 @@
     label {
       display: block;
       font-size: 13px;
-      margin-bottom: 1px; /* tajtare mot fältet */
+      margin-bottom: 0; /* nästan inget mellan label och fält */
       font-weight: 600;
     }
 
@@ -104,8 +103,8 @@
       display: flex;
       flex-wrap: wrap;
       column-gap: 10px;
-      row-gap: 2px;      /* mindre i höjdled */
-      margin-bottom: 2px;/* mindre mellan raderna */
+      row-gap: 0;       /* ingen extra höjd */
+      margin-bottom: 0; /* minimalt mellanrum mellan rader */
     }
 
     .form-row > div {
@@ -116,7 +115,7 @@
     input, select, textarea {
       width: 100%;
       box-sizing: border-box;
-      padding: 3px 7px;  /* tunnare fält */
+      padding: 3px 7px;  /* tunna fält */
       border-radius: 8px;
       border: 1px solid;
       font-size: 14px;
@@ -141,7 +140,7 @@
     }
 
     textarea {
-      min-height: 56px;
+      min-height: 50px;
       resize: vertical;
     }
 
@@ -159,11 +158,6 @@
       white-space: nowrap;
     }
 
-    .btn-primary {
-      background: var(--primary);
-      color: #ffffff;
-    }
-
     .btn-danger {
       background: var(--danger);
       color: #ffffff;
@@ -174,15 +168,9 @@
       color: #ffffff;
     }
 
-    .btn-neutral {
-      background: #e5e7eb;
-      color: #111827;
-    }
-
-    body.theme-dark .btn-neutral {
-      background: #111827;
-      color: #e5e7eb;
-      border: 1px solid #4b5563;
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
     }
 
     .btn-secondary {
@@ -526,13 +514,6 @@
           </div>
         </div>
 
-        <!-- Rensa-knapp under datum (kalendern) -->
-        <div class="form-row">
-          <div>
-            <button type="button" id="clearAll" class="btn-danger btn-small">Rensa alla poster</button>
-          </div>
-        </div>
-
         <div class="form-row">
           <div>
             <label for="project">Kund / Projekt</label>
@@ -555,8 +536,13 @@
           </div>
         </div>
 
+        <!-- RAD 1: bara Spara -->
         <div class="actions">
-          <button type="submit" class="btn-neutral">Spara tidsrad</button>
+          <button type="submit" class="btn-danger">Spara tidsrad</button>
+        </div>
+
+        <!-- RAD 2: Skapa PDF + Rapportera tid bredvid varandra -->
+        <div class="actions">
           <button type="button" id="createPdf" class="btn-success">Skapa PDF</button>
           <button type="button" id="emailPdf" class="btn-primary">Rapportera tid</button>
         </div>
@@ -591,6 +577,11 @@
             </tr>
           </tfoot>
         </table>
+
+        <!-- Rensa alla poster LÄNGST NED under denna vecka -->
+        <div style="margin-top:8px;">
+          <button type="button" id="clearAll" class="btn-danger btn-small">Rensa alla poster</button>
+        </div>
       </div>
     </div>
   </div>
@@ -599,7 +590,6 @@
     produce by Reklamgiganten.com
   </p>
 
-  <!-- jsPDF utan integrity (för att undvika blockering) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <script>
@@ -830,7 +820,6 @@
       document.getElementById("weekTotalKm").textContent = totalKm.toFixed(1);
     }
 
-    // Hämta period för PDF/mejl (använder filter om satta, annars min/max datum)
     function getPeriodForEntries(entries) {
       let fromDate = document.getElementById("filterFrom").value;
       let toDate = document.getElementById("filterTo").value;
