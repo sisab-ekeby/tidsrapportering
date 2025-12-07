@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tidsrapportering</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    .app {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .form-row > div {
+      flex: 1 1 150px;
+      min-width: 150px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 3px;
+      font-weight: 600;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    button {
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+
+    th {
+      background: #f9fafb;
+      font-weight: 600;
+    }
+
+    tfoot td {
+      font-weight: 700;
+      border-top: 2px solid #111827;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    @media (max-width: 700px) {
+      .form-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Tidsrapportering</h1>
+
+    <form id="timeForm">
+      <div class="form-row">
+        <div>
+          <label for="date">Datum</label>
+          <input type="date" id="date" required />
+        </div>
+        <div>
+          <label for="project">Kund / Projekt</label>
+          <input type="text" id="project" placeholder="Ex. JT Svets, Reklamgiganten, Kund X" required />
+        </div>
+        <div>
+          <label for="hours">Timmar</label>
+          <input type="number" step="0.25" min="0" id="hours" placeholder="t.ex. 3.5" required />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div style="flex: 1 1 100%;">
+          <label for="description">Vad har gjorts?</label>
+          <textarea id="description" placeholder="Ex. Montage av frost, resor, förberedelser osv."></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn-primary">Spara tidsrad</button>
+        <button type="button" id="clearAll" class="btn-danger">Rensa alla poster</button>
+        <button type="button" id="createPdf" class="btn-secondary">Skapa PDF</button>
+        <button type="button" id="emailPdf" class="btn-secondary">Mejla PDF</button>
+      </div>
+    </form>
+
+    <h2 style="margin-top:30px;">Inställningar för mejl</h2>
+    <div class="form-row">
+      <div>
+        <label for="emailTo">Standardmottagare (mejl)</label>
+        <input type="email" id="emailTo" placeholder="t.ex. ekonomi@dinkund.se" />
+      </div>
+    </div>
+
+    <h2 style="margin-top:30px;">Registrerade tider</h2>
+
+    <div class="form-row">
+      <div>
+        <label for="filterProject">Filtrera på projekt</label>
+        <input type="text" id="filterProject" placeholder="Lämna tomt för att visa allt" />
+      </div>
+      <div>
+        <label for="filterFrom">Från datum</label>
+        <input type="date" id="filterFrom" />
+      </div>
+      <div>
+        <label for="filterTo">Till datum</label>
+        <input type="date" id="filterTo" />
+      </div>
+      <div style="align-self:flex-end;">
+        <button type="button" id="applyFilter" class="btn-secondary">Filtrera</button>
+      </div>
+    </div>
+
+    <table id="timeTable">
+      <thead>
+        <tr>
+          <th>Datum</th>
+          <th>Projekt</th>
+          <th>Beskrivning</th>
+          <th class="text-right">Timmar</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Rader genereras av JavaScript -->
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" class="text-right">Summa timmar:</td>
+          <td class="text-right" id="totalHours">0</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- jsPDF via CDN för att skapa PDF i webbläsaren -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-v2V0Q8GvYDL8+/zTzubrC+5FHbQKJuHzyqfXhZ07z1uVciTdWkY0vNagGX26kS01QH1tTzQgq6GfJ0QYCF3qkQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script>
+    const STORAGE_KEY = "tidsrapportering_entries_v1";
+    const EMAIL_SETTINGS_KEY = "tidsrapportering_email_settings_v1";
+    const EMAIL_LOG_KEY = "tidsrapportering_email_log_v1";
+
+    function loadEntries() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        console.error("Kunde inte läsa sparade poster", e);
+        return [];
+      }
+    }
+
+    function saveEntries(entries) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    }
+
+    function loadEmailSettings() {
+      const raw = localStorage.getItem(EMAIL_SETTINGS_KEY);
+      if (!raw) return {};
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        return {};
+      }
+    }
+
+    function saveEmailSettings(settings) {
+      localStorage.setItem(EMAIL_SETTINGS_KEY, JSON.stringify(settings));
+    }
+
+    function saveEmailLog(logEntry) {
+      const raw = localStorage.getItem(EMAIL_LOG_KEY);
+      let list = [];
+      if (raw) {
+        try {
+          list = JSON.parse(raw);
+        } catch (e) {
+          list = [];
+        }
+      }
+      list.push(logEntry);
+      localStorage.setItem(EMAIL_LOG_KEY, JSON.stringify(list));
+    }
+
+    function renderTable(entries) {
+      const tbody = document.querySelector("#timeTable tbody");
+      const totalEl = document.getElementById("totalHours");
+      tbody.innerHTML = "";
+
+      let total = 0;
+
+      entries.forEach((entry, index) => {
+        const tr = document.createElement("tr");
+
+        const tdDate = document.createElement("td");
+        tdDate.textContent = entry.date || "";
+        tr.appendChild(tdDate);
+
+        const tdProject = document.createElement("td");
+        tdProject.textContent = entry.project || "";
+        tr.appendChild(tdProject);
+
+        const tdDesc = document.createElement("td");
+        tdDesc.textContent = entry.description || "";
+        tr.appendChild(tdDesc);
+
+        const tdHours = document.createElement("td");
+        tdHours.className = "text-right";
+        tdHours.textContent = Number(entry.hours || 0).toFixed(2);
+        tr.appendChild(tdHours);
+
+        const tdDelete = document.createElement("td");
+        const btn = document.createElement("button");
+        btn.textContent = "Ta bort";
+        btn.className = "btn-secondary";
+        btn.onclick = () => {
+          const all = loadEntries();
+          all.splice(index, 1);
+          saveEntries(all);
+          applyFilter(); // rendera om
+        };
+        tdDelete.appendChild(btn);
+        tr.appendChild(tdDelete);
+
+        total += Number(entry.hours || 0);
+        tbody.appendChild(tr);
+      });
+
+      totalEl.textContent = total.toFixed(2);
+    }
+
+    function getFilteredEntries() {
+      const all = loadEntries();
+      const projectFilter = document.getElementById("filterProject").value.trim().toLowerCase();
+      const fromDate = document.getElementById("filterFrom").value;
+      const toDate = document.getElementById("filterTo").value;
+
+      return all.filter(entry => {
+        const matchesProject =
+          !projectFilter ||
+          (entry.project && entry.project.toLowerCase().includes(projectFilter));
+
+        const dateVal = entry.date || "";
+        let matchesFrom = true;
+        let matchesTo = true;
+
+        if (fromDate) {
+          matchesFrom = dateVal >= fromDate;
+        }
+        if (toDate) {
+          matchesTo = dateVal <= toDate;
+        }
+
+        return matchesProject && matchesFrom && matchesTo;
+      });
+    }
+
+    function applyFilter() {
+      const filtered = getFilteredEntries();
+      renderTable(filtered);
+    }
+
+    function generatePdf(entries) {
+      if (!entries || entries.length === 0) {
+        alert("Det finns inga tidsrader att skapa PDF av (kolla filtreringen).");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const title = "Tidsrapport";
+      doc.setFontSize(16);
+      doc.text(title, 14, 15);
+
+      doc.setFontSize(10);
+      const fromDate = document.getElementById("filterFrom").value;
+      const toDate = document.getElementById("filterTo").value;
+      const projectFilter = document.getElementById("filterProject").value.trim();
+
+      let subtitleLines = [];
+      if (fromDate || toDate) {
+        subtitleLines.push(`Period: ${fromDate || "-"} till ${toDate || "-"}`);
+      }
+      if (projectFilter) {
+        subtitleLines.push(`Projektfilter: ${projectFilter}`);
+      }
+      if (subtitleLines.length === 0) {
+        subtitleLines.push("Ingen filtrering (alla rader).");
+      }
+
+      doc.text(subtitleLines.join(" | "), 14, 22);
+
+      // Tabellhuvud
+      let y = 32;
+      doc.setFontSize(10);
+      doc.text("Datum", 14, y);
+      doc.text("Projekt", 40, y);
+      doc.text("Beskrivning", 90, y);
+      doc.text("Timmar", 190, y, { align: "right" });
+
+      y += 4;
+
+      let totalHours = 0;
+
+      entries.forEach(entry => {
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+
+        const date = entry.date || "";
+        const project = entry.project || "";
+        const desc = entry.description || "";
+        const hours = Number(entry.hours || 0);
+
+        doc.text(date, 14, y);
+        doc.text(project.substring(0, 22), 40, y);
+
+        // Beskrivning – wrap om det blir långt
+        const descLines = doc.splitTextToSize(desc, 90);
+        doc.text(descLines, 90, y);
+
+        doc.text(hours.toFixed(2), 190, y, { align: "right" });
+
+        y += 4 + (descLines.length - 1) * 4;
+        totalHours += hours;
+      });
+
+      y += 6;
+      doc.setFontSize(11);
+      doc.text(`Summa timmar: ${totalHours.toFixed(2)}`, 190, y, { align: "right" });
+
+      doc.save("tidsrapport.pdf");
+    }
+
+    function emailPdf(entries) {
+      if (!entries || entries.length === 0) {
+        alert("Det finns inga tidsrader att mejla (kolla filtreringen).");
+        return;
+      }
+
+      const emailToInput = document.getElementById("emailTo");
+      const emailTo = (emailToInput.value || "").trim();
+
+      if (!emailTo) {
+        alert("Fyll i en mottagaradress under 'Inställningar för mejl' först.");
+        emailToInput.focus();
+        return;
+      }
+
+      const totalHours = entries.reduce((sum, e) => sum + Number(e.hours || 0), 0);
+      const fromDate = document.getElementById("filterFrom").value || "-";
+      const toDate = document.getElementById("filterTo").value || "-";
+      const projectFilter = document.getElementById("filterProject").value.trim();
+
+      const subject = `Tidsrapport (${fromDate} - ${toDate})`;
+      let body = "Hej!\n\nHär kommer tidsrapporten.\n\n";
+
+      if (projectFilter) {
+        body += `Projekt: ${projectFilter}\n`;
+      }
+
+      body += `Period: ${fromDate} till ${toDate}\n`;
+      body += `Antal rader: ${entries.length}\n`;
+      body += `Summa timmar: ${totalHours.toFixed(2)}\n\n`;
+      body += "PDF-filen med fullständig rapport är bifogad.\n\n";
+      body += "Vänliga hälsningar\n";
+
+      // Spara mejlet i localStorage som logg
+      saveEmailLog({
+        to: emailTo,
+        subject,
+        bodyPreview: body.substring(0, 300),
+        rows: entries.length,
+        totalHours: Number(totalHours.toFixed(2)),
+        date: new Date().toISOString()
+      });
+
+      // Öppna standardmailklienten (användaren får själv bifoga PDF-filen)
+      const mailtoLink =
+        "mailto:" +
+        encodeURIComponent(emailTo) +
+        "?subject=" +
+        encodeURIComponent(subject) +
+        "&body=" +
+        encodeURIComponent(body);
+
+      window.location.href = mailtoLink;
+    }
+
+    // --- Eventhantering ---
+
+    document.getElementById("timeForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const date = document.getElementById("date").value;
+      const project = document.getElementById("project").value.trim();
+      const hours = document.getElementById("hours").value;
+      const description = document.getElementById("description").value.trim();
+
+      if (!date || !project || !hours) {
+        alert("Fyll i datum, projekt och timmar.");
+        return;
+      }
+
+      const entries = loadEntries();
+      entries.push({ date, project, hours: Number(hours), description });
+      saveEntries(entries);
+
+      document.getElementById("hours").value = "";
+      document.getElementById("description").value = "";
+
+      applyFilter();
+    });
+
+    document.getElementById("clearAll").addEventListener("click", () => {
+      if (confirm("Är du säker på att du vill rensa ALLA tidsrader?")) {
+        localStorage.removeItem(STORAGE_KEY);
+        applyFilter();
+      }
+    });
+
+    document.getElementById("applyFilter").addEventListener("click", () => {
+      applyFilter();
+    });
+
+    document.getElementById("createPdf").addEventListener("click", () => {
+      const entries = getFilteredEntries();
+      generatePdf(entries);
+    });
+
+    document.getElementById("emailPdf").addEventListener("click", () => {
+      const entries = getFilteredEntries();
+      emailPdf(entries);
+    });
+
+    // Spara / läsa mejladress (mottagare)
+    const emailSettings = loadEmailSettings();
+    const emailToInput = document.getElementById("emailTo");
+    if (emailSettings.to) {
+      emailToInput.value = emailSettings.to;
+    }
+
+    emailToInput.addEventListener("change", () => {
+      const settings = loadEmailSettings();
+      settings.to = emailToInput.value.trim();
+      saveEmailSettings(settings);
+    });
+
+    // Sätt dagens datum som default
+    document.getElementById("date").valueAsNumber =
+      Date.now() - (new Date()).getTimezoneOffset() * 60000;
+
+    // Init – visa alla poster
+    applyFilter();
+  </script>
+</body>
+</html>
