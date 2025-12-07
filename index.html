@@ -100,8 +100,8 @@
     .form-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 10px;
+      gap: 6px;
+      margin-bottom: 6px;
     }
 
     .form-row > div {
@@ -211,9 +211,9 @@
     }
 
     .actions {
-      margin-top: 10px;
+      margin-top: 8px;
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
@@ -351,9 +351,9 @@
     }
 
     .week-section {
-      margin-top: 20px;
+      margin-top: 14px;
       border-top: 1px solid;
-      padding-top: 12px;
+      padding-top: 10px;
     }
 
     body.theme-dark .week-section {
@@ -415,7 +415,7 @@
           </div>
         </div>
         <p style="font-size:12px;opacity:0.75;margin-top:4px;">
-          Adressen sparas automatiskt på denna enhet och används när du trycker på <strong>Mejla PDF</strong>.
+          Adressen sparas automatiskt på denna enhet och används när du trycker på <strong>Rapportera tid</strong>.
         </p>
       </div>
 
@@ -526,8 +526,13 @@
           <button type="submit" class="btn-primary">Spara tidsrad</button>
           <button type="button" id="clearAll" class="btn-danger">Rensa alla poster</button>
           <button type="button" id="createPdf" class="btn-secondary">Skapa PDF</button>
-          <button type="button" id="emailPdf" class="btn-secondary">Mejla PDF</button>
+          <button type="button" id="emailPdf" class="btn-secondary">Rapportera tid</button>
         </div>
+
+        <p style="font-size:12px;opacity:0.7;margin-top:6px;">
+          <strong>Skapa PDF</strong> – sparar en PDF på din enhet.<br>
+          <strong>Rapportera tid</strong> – din veckorapport öppnas i ett mejl till kontoret.
+        </p>
       </form>
 
       <div class="week-section">
@@ -558,7 +563,11 @@
     </div>
   </div>
 
-  <!-- jsPDF via CDN för att skapa PDF i webbläsaren -->
+  <p style="text-align:center;margin:10px 0 16px 0;font-size:12px;opacity:0.6;">
+    produce by Reklamgiganten.com
+  </p>
+
+  <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-v2V0Q8GvYDL8+/zTzubrC+5FHbQKJuHzyqfXhZ07z1uVciTdWkY0vNagGX26kS01QH1tTzQgq6GfJ0QYCF3qkQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
   <script>
@@ -570,12 +579,7 @@
     function loadEntries() {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return [];
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        console.error("Kunde inte läsa sparade poster", e);
-        return [];
-      }
+      try { return JSON.parse(raw); } catch { return []; }
     }
 
     function saveEntries(entries) {
@@ -585,11 +589,7 @@
     function loadEmailSettings() {
       const raw = localStorage.getItem(EMAIL_SETTINGS_KEY);
       if (!raw) return {};
-      try {
-        return JSON.parse(raw);
-      } catch {
-        return {};
-      }
+      try { return JSON.parse(raw); } catch { return {}; }
     }
 
     function saveEmailSettings(settings) {
@@ -600,11 +600,7 @@
       const raw = localStorage.getItem(EMAIL_LOG_KEY);
       let list = [];
       if (raw) {
-        try {
-          list = JSON.parse(raw);
-        } catch {
-          list = [];
-        }
+        try { list = JSON.parse(raw); } catch { list = []; }
       }
       list.push(logEntry);
       localStorage.setItem(EMAIL_LOG_KEY, JSON.stringify(list));
@@ -622,7 +618,6 @@
       }
       localStorage.setItem(THEME_KEY, theme);
 
-      // uppdatera "aktiva" tema-knappar
       document.getElementById("themeLight").classList.toggle("active", theme === "light");
       document.getElementById("themeDark").classList.toggle("active", theme === "dark");
     }
@@ -702,14 +697,12 @@
 
       return all.filter(entry => {
         const dateVal = entry.date || "";
-
         const matchesProject =
           !projectFilter ||
           (entry.project && entry.project.toLowerCase().includes(projectFilter));
 
         let matchesFrom = true;
         let matchesTo = true;
-
         if (fromDate) matchesFrom = dateVal >= fromDate;
         if (toDate) matchesTo = dateVal <= toDate;
 
@@ -729,6 +722,16 @@
       return `${y}-${m}-${day}`;
     }
 
+    function getCurrentWeekInfo() {
+      const date = new Date();
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7; // 1-7, där 1 = mån
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return { week: weekNo, year: d.getUTCFullYear() };
+    }
+
     function updateWeekSummary() {
       const entries = loadEntries();
       const today = new Date();
@@ -742,8 +745,7 @@
       const mondayStr = toIsoDate(monday);
       const fridayStr = toIsoDate(friday);
 
-      const weekRangeText = document.getElementById("weekRangeText");
-      weekRangeText.textContent = `${mondayStr} – ${fridayStr}`;
+      document.getElementById("weekRangeText").textContent = `${mondayStr} – ${fridayStr}`;
 
       const days = [
         { label: "Mån", hours: 0, km: 0 },
@@ -760,7 +762,6 @@
 
         const d = new Date(dateStr + "T00:00:00");
         const weekday = d.getDay(); // 1 = mån ... 5 = fre
-
         const idx = weekday - 1;
         if (idx < 0 || idx > 4) return;
 
@@ -798,10 +799,10 @@
       document.getElementById("weekTotalKm").textContent = totalKm.toFixed(1);
     }
 
-    function generatePdf(entries) {
-      if (!entries || entries.length === 0) {
-        alert("Det finns inga tidsrader att skapa PDF av (kolla filtreringen i menyn).");
-        return;
+    function buildPdf(entries) {
+      if (!window.jspdf) {
+        alert("PDF-biblioteket kunde inte laddas. Kontrollera internetuppkoppling.");
+        return null;
       }
 
       const { jsPDF } = window.jspdf;
@@ -867,7 +868,20 @@
       doc.text(`Summa timmar: ${totalHours.toFixed(2)}`, 170, y, { align: "right" });
       doc.text(`Summa mil: ${totalKm.toFixed(1)}`, 190, y, { align: "right" });
 
-      doc.save("tidsrapport.pdf");
+      return doc;
+    }
+
+    function generatePdf(entries) {
+      if (!entries || entries.length === 0) {
+        alert("Det finns inga tidsrader att skapa PDF av (kolla filtreringen i menyn).");
+        return;
+      }
+      const doc = buildPdf(entries);
+      if (!doc) return;
+
+      const { week } = getCurrentWeekInfo();
+      const filename = `tidsrapport-vecka-${String(week).padStart(2,"0")}.pdf`;
+      doc.save(filename);
     }
 
     function emailPdf(entries) {
@@ -878,7 +892,6 @@
 
       const emailSettings = loadEmailSettings();
       const emailTo = (emailSettings.to || "").trim();
-
       if (!emailTo) {
         alert("Fyll i en standardmottagare i menyn först (Inställningar för mejl).");
         openDrawer();
@@ -890,17 +903,17 @@
       const fromDate = document.getElementById("filterFrom").value || "-";
       const toDate = document.getElementById("filterTo").value || "-";
       const projectFilter = document.getElementById("filterProject").value.trim();
+      const { week } = getCurrentWeekInfo();
+      const filename = `tidsrapport-vecka-${String(week).padStart(2,"0")}.pdf`;
 
-      const subject = `Tidsrapport (${fromDate} - ${toDate})`;
-      let body = "Hej!\n\nHär kommer tidsrapporten.\n\n";
-
+      const subject = `Tidsrapport vecka ${week} (${fromDate} - ${toDate})`;
+      let body = "Hej!\n\nHär kommer veckans tidsrapport.\n\n";
       if (projectFilter) body += `Projekt: ${projectFilter}\n`;
-
       body += `Period: ${fromDate} till ${toDate}\n`;
       body += `Antal rader: ${entries.length}\n`;
       body += `Summa timmar: ${totalHours.toFixed(2)}\n`;
       body += `Summa mil: ${totalKm.toFixed(1)}\n\n`;
-      body += "PDF-filen med fullständig rapport är bifogad.\n\n";
+      body += `Filnamn på PDF från appen: ${filename}\n\n`;
       body += "Vänliga hälsningar\n";
 
       saveEmailLog({
@@ -924,7 +937,6 @@
       window.location.href = mailtoLink;
     }
 
-    // Drawer-funktioner
     const drawer = document.getElementById("drawer");
     const drawerBackdrop = document.getElementById("drawerBackdrop");
 
@@ -942,7 +954,6 @@
     document.getElementById("closeDrawer").addEventListener("click", closeDrawerFn);
     drawerBackdrop.addEventListener("click", closeDrawerFn);
 
-    // Form & knappar
     document.getElementById("timeForm").addEventListener("submit", (e) => {
       e.preventDefault();
 
@@ -997,24 +1008,20 @@
       emailPdf(entries);
     });
 
-    // Tema-knappar
     document.getElementById("themeLight").addEventListener("click", () => setTheme("light"));
     document.getElementById("themeDark").addEventListener("click", () => setTheme("dark"));
 
-    // Mejladress – ladda & spara
     const emailSettings = loadEmailSettings();
     const emailToInput = document.getElementById("emailTo");
     if (emailSettings.to) {
       emailToInput.value = emailSettings.to;
     }
-
     emailToInput.addEventListener("change", () => {
       const settings = loadEmailSettings();
       settings.to = emailToInput.value.trim();
       saveEmailSettings(settings);
     });
 
-    // Init
     initTheme();
     document.getElementById("date").valueAsNumber =
       Date.now() - (new Date()).getTimezoneOffset() * 60000;
