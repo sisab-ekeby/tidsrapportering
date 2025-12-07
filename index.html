@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Tidsrapportering</title>
+
 <style>
     body {
         margin: 0;
@@ -45,7 +46,7 @@
     .header {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 12px;
         margin-bottom: 15px;
     }
 
@@ -65,8 +66,8 @@
 
     /* MENU BUTTON */
     .menu-btn {
-        width: 42px;
-        height: 42px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
         border: 1px solid var(--border);
         display: flex;
@@ -95,20 +96,36 @@
         left: 0;
     }
 
+    .menu-header {
+        display:flex;
+        justify-content: space-between;
+        align-items:center;
+        margin-bottom:15px;
+    }
+
     .menu-title {
         font-size: 20px;
-        margin-bottom: 10px;
         font-weight: 700;
     }
 
-    /* FORM LAYOUT — 4px spacing */
+    .close-btn {
+        background: none;
+        border: none;
+        color: var(--text);
+        font-size: 26px;
+        cursor: pointer;
+        padding: 0 6px;
+        line-height: 1;
+    }
+
+    /* FORM LAYOUT (tight) */
     .form-row {
-        margin-bottom: 4px;
+        margin-bottom: 4px; /* EXAKT 4px */
     }
 
     label {
         font-size: 14px;
-        margin-bottom: 1px; /* tighter */
+        margin-bottom: 1px; /* tight label */
         font-weight: 600;
         display: block;
     }
@@ -117,7 +134,7 @@
         width: 100%;
         background: var(--input-bg);
         border: 1px solid var(--border);
-        padding: 3px 7px; /* thinner fields */
+        padding: 3px 7px; /* tight height */
         border-radius: 8px;
         color: var(--text);
         box-sizing: border-box;
@@ -130,7 +147,7 @@
 
     /* BUTTONS */
     .btn-primary {
-        background: #8c8c8c;
+        background: #b60000;
         border: none;
         padding: 10px 16px;
         border-radius: 8px;
@@ -138,35 +155,37 @@
         color: #fff;
         font-size: 15px;
     }
-
-    .btn-danger {
-        background: #b60000;
-        padding: 10px 16px;
-        border-radius: 8px;
-        border: none;
-        color: #fff;
-        cursor: pointer;
-    }
-
     .btn-green {
         background: #1aa12a;
+        border: none;
         padding: 10px 16px;
         border-radius: 8px;
-        border: none;
-        color: #fff;
         cursor: pointer;
+        color: #fff;
+        font-size: 15px;
     }
-
     .btn-blue {
         background: #0069ff;
+        border: none;
         padding: 10px 16px;
         border-radius: 8px;
-        border: none;
-        color: #fff;
         cursor: pointer;
+        color: #fff;
+        font-size: 15px;
+    }
+    .btn-danger {
+        background: #b60000;
+        border: none;
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        color: white;
+        font-size: 15px;
+        margin-top: 18px;
     }
 
-    /* WEEK TABLE */
+    /* TABLE */
     table {
         width: 100%;
         border-collapse: collapse;
@@ -187,15 +206,22 @@
     .footer {
         text-align: center;
         font-size: 12px;
-        opacity: 0.7;
+        opacity: 0.6;
         margin-top: 12px;
     }
 </style>
 </head>
+
 <body>
 
+<!-- SIDE MENU -->
 <div id="sideMenu">
-    <div class="menu-title">Inställningar</div>
+   
+    <div class="menu-header">
+        <div class="menu-title">Inställningar</div>
+        <button class="close-btn" onclick="toggleMenu()">✕</button>
+    </div>
+
     <label>Spara standardmottagare</label>
     <input id="savedEmail" placeholder="t.ex ekonomi@dittföretag.se">
     <button onclick="saveEmail()" class="btn-primary" style="margin-top:10px;">Spara</button>
@@ -203,22 +229,24 @@
     <hr style="margin:15px 0;">
 
     <div class="menu-title">Tema</div>
-    <button onclick="setTheme('light')" class="btn-primary">Ljust tema</button><br><br>
+    <button onclick="setTheme('light')" class="btn-primary" style="margin-bottom:10px;">Ljust tema</button>
     <button onclick="setTheme('dark')" class="btn-primary">Mörkt tema</button>
 </div>
+
 
 <div class="app">
     <div class="card">
 
+        <!-- HEADER -->
         <div class="header">
             <div class="menu-btn" onclick="toggleMenu()">☰</div>
-
             <div>
                 <small>S I S A B</small>
                 <h1>Tidsrapportering</h1>
             </div>
         </div>
 
+        <!-- FORM -->
         <div class="form-row">
             <label>Datum</label>
             <input type="date" id="dateInput">
@@ -241,9 +269,10 @@
 
         <div class="form-row">
             <label>Vad har gjorts?</label>
-            <textarea id="descInput" placeholder="Ex. Montage av frost, resor, förberedelser osv."></textarea>
+            <textarea id="descInput"></textarea>
         </div>
 
+        <!-- BUTTON ROW -->
         <div style="display:flex; gap:10px; margin:10px 0;">
             <button class="btn-primary" onclick="saveRow()">Spara tidsrad</button>
             <button class="btn-green" onclick="createPDF()">Skapa PDF</button>
@@ -252,23 +281,21 @@
 
         <p style="font-size:12px;opacity:0.7;">
             <strong>Skapa PDF</strong> – sparar en PDF på din enhet.<br>
-            <strong>Rapportera tid</strong> – öppnar veckorapport som mejl.
+            <strong>Rapportera tid</strong> – öppnar ett mejl med din veckorapport.
         </p>
 
+        <!-- WEEK TABLE -->
         <h3>Denna vecka (mån–fre)</h3>
         <div id="weekTable"></div>
 
-        <button class="btn-danger" onclick="clearAll()" style="margin-top:15px; width:100%;">
-            Rensa alla poster
-        </button>
+        <button class="btn-danger" onclick="clearAll()">Rensa alla poster</button>
 
         <div class="footer">produce by Reklamgiganten.com</div>
-
     </div>
 </div>
 
 <script>
-/* MENU */
+/* MENU TOGGLE */
 function toggleMenu() {
     document.getElementById("sideMenu").classList.toggle("open");
 }
@@ -277,11 +304,13 @@ function toggleMenu() {
 function setTheme(mode) {
     if (mode === "light") document.body.setAttribute("data-theme", "light");
     else document.body.removeAttribute("data-theme");
+
     localStorage.setItem("theme", mode);
 }
 
-if (localStorage.getItem("theme") === "light") document.body.setAttribute("data-theme","light");
-
+if (localStorage.getItem("theme") === "light") {
+    document.body.setAttribute("data-theme", "light");
+}
 
 /* SAVE EMAIL */
 function saveEmail() {
@@ -290,39 +319,39 @@ function saveEmail() {
     alert("E-post sparad!");
 }
 
-document.getElementById("savedEmail").value = localStorage.getItem("savedEmail") || "";
+document.getElementById("savedEmail").value =
+    localStorage.getItem("savedEmail") || "";
 
-
-/* SAVE ROWS */
+/* SAVE ROW */
 function saveRow() {
     let rows = JSON.parse(localStorage.getItem("rows") || "[]");
 
     rows.push({
-        date: document.getElementById("dateInput").value,
-        project: document.getElementById("projectInput").value,
-        hours: parseFloat(document.getElementById("hoursInput").value || 0),
-        mil: parseFloat(document.getElementById("milInput").value || 0),
-        desc: document.getElementById("descInput").value
+        date: dateInput.value,
+        project: projectInput.value,
+        hours: parseFloat(hoursInput.value || 0),
+        mil: parseFloat(milInput.value || 0),
+        desc: descInput.value
     });
 
     localStorage.setItem("rows", JSON.stringify(rows));
-    alert("Sparad!");
     renderWeek();
+    alert("Sparad!");
 }
 
-/* CLEAR */
+/* CLEAR ALL */
 function clearAll() {
-    if (confirm("Radera alla poster?")) {
+    if (confirm("Vill du radera ALLA poster?")) {
         localStorage.removeItem("rows");
         renderWeek();
     }
 }
 
-/* WEEK TABLE */
+/* WEEK VIEW */
 function renderWeek() {
     let rows = JSON.parse(localStorage.getItem("rows") || "[]");
 
-    let weekHTML = `
+    let html = `
     <table>
         <tr><th>Dag</th><th>Timmar</th><th>Mil</th></tr>
         <tr><td>Mån</td><td>0.00</td><td>0</td></tr>
@@ -332,22 +361,22 @@ function renderWeek() {
         <tr><td>Fre</td><td>0.00</td><td>0</td></tr>
     </table>`;
 
-    document.getElementById("weekTable").innerHTML = weekHTML;
+    document.getElementById("weekTable").innerHTML = html;
 }
 
 renderWeek();
 
-/* PDF */
+/* PDF (placeholder) */
 function createPDF() {
-    alert("PDF-funktionen är kvar som tidigare (jsPDF-laddning).");
+    alert("PDF-funktionen är oförändrad.");
 }
 
 /* EMAIL */
 function emailPDF() {
-    const saved = localStorage.getItem("savedEmail") || "";
+    const mail = localStorage.getItem("savedEmail") || "";
     let subject = "Veckorapport";
     let body = "Här kommer veckans rapport.\n\n(Bifoga PDF-filen du sparat.)";
-    window.location.href = `mailto:${saved}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = `mailto:${mail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 </script>
 
