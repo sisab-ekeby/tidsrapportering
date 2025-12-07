@@ -375,7 +375,7 @@ function saveRow() {
     const milVal = parseFloat(document.getElementById("milInput").value || "0");
     const descVal = document.getElementById("descInput").value.trim();
 
-    if (!dateVal || !projectVal || !hoursVal) {
+    if (!dateVal || !projectVal || isNaN(hoursVal) || hoursVal === 0) {
         alert("Fyll i minst datum, kund/projekt och antal timmar.");
         return;
     }
@@ -390,7 +390,6 @@ function saveRow() {
     });
     saveRows(rows);
 
-    // töm fält (behåll datum + projekt om du vill, nu tömmer vi bara timmar/mil/beskrivning)
     document.getElementById("hoursInput").value = "";
     document.getElementById("milInput").value = "";
     document.getElementById("descInput").value = "";
@@ -419,13 +418,12 @@ function getCurrentWeekRows() {
     return { rows: weekRows, info, fromStr, toStr };
 }
 
-/* ====== VISA VECKOSUMMARY I TABBELLEN NEDTILL ====== */
+/* ====== VISA VECKOSUMMARY I TABELLEN NEDTILL ====== */
 function renderWeek() {
     const { rows, info, fromStr, toStr } = getCurrentWeekRows();
     const weekInfoEl = document.getElementById("weekInfo");
     weekInfoEl.textContent = `Vecka ${info.week} – period ${fromStr} till ${toStr}`;
 
-    // skapar summering per dag
     const days = [
         { label: "Mån", hours: 0, mil: 0 },
         { label: "Tis", hours: 0, mil: 0 },
@@ -436,7 +434,7 @@ function renderWeek() {
 
     rows.forEach(r => {
         const d = new Date(r.date + "T00:00:00");
-        const weekday = d.getDay(); // 1=mån, etc
+        const weekday = d.getDay(); // 1=mån...
         const idx = weekday - 1;
         if (idx >= 0 && idx <= 4) {
             days[idx].hours += Number(r.hours || 0);
@@ -546,7 +544,7 @@ function createPDF() {
     doc.save(filename);
 }
 
-/* ====== SKICKA MEJL MED INFO (INGEN PDF-TEXT) ====== */
+/* ====== SKICKA MEJL MED INFO ====== */
 function emailPDF() {
     const savedMail = (localStorage.getItem("savedEmail") || "").trim();
     if (!savedMail) {
@@ -589,7 +587,7 @@ function emailPDF() {
     window.location.href = mailto;
 }
 
-/* INIT – sätt dagens datum i datumfältet och rendera vecka */
+/* INIT – sätt dagens datum och rendera vecka */
 (function init() {
     const today = new Date();
     document.getElementById("dateInput").value = formatDate(today);
