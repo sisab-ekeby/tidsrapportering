@@ -120,12 +120,12 @@
 
     /* FORM LAYOUT (tight) */
     .form-row {
-        margin-bottom: 4px; /* EXAKT 4px */
+        margin-bottom: 4px; /* 4px mellan raderna */
     }
 
     label {
         font-size: 14px;
-        margin-bottom: 1px; /* tight label */
+        margin-bottom: 1px; /* tajt label → fält */
         font-weight: 600;
         display: block;
     }
@@ -134,7 +134,7 @@
         width: 100%;
         background: var(--input-bg);
         border: 1px solid var(--border);
-        padding: 3px 7px; /* tight height */
+        padding: 3px 7px; /* lägre fält */
         border-radius: 8px;
         color: var(--text);
         box-sizing: border-box;
@@ -216,7 +216,6 @@
 
 <!-- SIDE MENU -->
 <div id="sideMenu">
-   
     <div class="menu-header">
         <div class="menu-title">Inställningar</div>
         <button class="close-btn" onclick="toggleMenu()">✕</button>
@@ -228,7 +227,7 @@
 
     <hr style="margin:15px 0;">
 
-    <div class="menu-title">Tema</div>
+    <div class="menu-title" style="margin-bottom:8px;">Tema</div>
     <button onclick="setTheme('light')" class="btn-primary" style="margin-bottom:10px;">Ljust tema</button>
     <button onclick="setTheme('dark')" class="btn-primary">Mörkt tema</button>
 </div>
@@ -285,7 +284,8 @@
         </p>
 
         <!-- WEEK TABLE -->
-        <h3>Denna vecka (mån–fre)</h3>
+        <h3>Aktuell vecka (mån–fre)</h3>
+        <div id="weekInfo" style="font-size:12px;opacity:0.7;margin-bottom:4px;"></div>
         <div id="weekTable"></div>
 
         <button class="btn-danger" onclick="clearAll()">Rensa alla poster</button>
@@ -294,8 +294,12 @@
     </div>
 </div>
 
+<!-- jsPDF för PDF-skapande -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <script>
-/* MENU TOGGLE */
+/* ====== HJÄLPFUNKTIONER ====== */
+
 function toggleMenu() {
     document.getElementById("sideMenu").classList.toggle("open");
 }
@@ -312,9 +316,9 @@ if (localStorage.getItem("theme") === "light") {
     document.body.setAttribute("data-theme", "light");
 }
 
-/* SAVE EMAIL */
+/* EMAILINSTÄLLNING */
 function saveEmail() {
-    const v = document.getElementById("savedEmail").value;
+    const v = document.getElementById("savedEmail").value.trim();
     localStorage.setItem("savedEmail", v);
     alert("E-post sparad!");
 }
@@ -322,24 +326,80 @@ function saveEmail() {
 document.getElementById("savedEmail").value =
     localStorage.getItem("savedEmail") || "";
 
-/* SAVE ROW */
-function saveRow() {
-    let rows = JSON.parse(localStorage.getItem("rows") || "[]");
-
-    rows.push({
-        date: dateInput.value,
-        project: projectInput.value,
-        hours: parseFloat(hoursInput.value || 0),
-        mil: parseFloat(milInput.value || 0),
-        desc: descInput.value
-    });
-
+/* LADDA / SPARA RADER */
+function loadRows() {
+    try {
+        return JSON.parse(localStorage.getItem("rows") || "[]");
+    } catch {
+        return [];
+    }
+}
+function saveRows(rows) {
     localStorage.setItem("rows", JSON.stringify(rows));
-    renderWeek();
-    alert("Sparad!");
 }
 
-/* CLEAR ALL */
+/* VECKOBERÄKNING */
+function getWeekInfo(dateObj) {
+    const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+    const dayNum = d.getUTCDay() || 7; // 1-7, 1=mån
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+
+    const monday = new Date(dateObj);
+    const day = monday.getDay(); // 0=sön,1=mån
+    const diffToMonday = (day + 6) % 7;
+    monday.setDate(monday.getDate() - diffToMonday);
+    const friday = new Date(monday);
+    friday.setDate(monday.getDate() + 4);
+
+    return {
+        week: weekNo,
+        monday,
+        friday
+    };
+}
+
+function formatDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+}
+
+/* ====== SPARA TIDSRAD ====== */
+function saveRow() {
+    const dateVal = document.getElementById("dateInput").value;
+    const projectVal = document.getElementById("projectInput").value.trim();
+    const hoursVal = parseFloat(document.getElementById("hoursInput").value || "0");
+    const milVal = parseFloat(document.getElementById("milInput").value || "0");
+    const descVal = document.getElementById("descInput").value.trim();
+
+    if (!dateVal || !projectVal || !hoursVal) {
+        alert("Fyll i minst datum, kund/projekt och antal timmar.");
+        return;
+    }
+
+    const rows = loadRows();
+    rows.push({
+        date: dateVal,
+        project: projectVal,
+        hours: hoursVal,
+        mil: milVal,
+        desc: descVal
+    });
+    saveRows(rows);
+
+    // töm fält (behåll datum + projekt om du vill, nu tömmer vi bara timmar/mil/beskrivning)
+    document.getElementById("hoursInput").value = "";
+    document.getElementById("milInput").value = "";
+    document.getElementById("descInput").value = "";
+
+    renderWeek();
+    alert("Tidsrad sparad!");
+}
+
+/* ====== RADERA ALLT ====== */
 function clearAll() {
     if (confirm("Vill du radera ALLA poster?")) {
         localStorage.removeItem("rows");
@@ -347,37 +407,194 @@ function clearAll() {
     }
 }
 
-/* WEEK VIEW */
-function renderWeek() {
-    let rows = JSON.parse(localStorage.getItem("rows") || "[]");
+/* ====== HÄMTA RADER FÖR AKTUELL VECKA ====== */
+function getCurrentWeekRows() {
+    const rows = loadRows();
+    const today = new Date();
+    const info = getWeekInfo(today);
+    const fromStr = formatDate(info.monday);
+    const toStr = formatDate(info.friday);
 
-    let html = `
-    <table>
-        <tr><th>Dag</th><th>Timmar</th><th>Mil</th></tr>
-        <tr><td>Mån</td><td>0.00</td><td>0</td></tr>
-        <tr><td>Tis</td><td>0.00</td><td>0</td></tr>
-        <tr><td>Ons</td><td>0.00</td><td>0</td></tr>
-        <tr><td>Tors</td><td>0.00</td><td>0</td></tr>
-        <tr><td>Fre</td><td>0.00</td><td>0</td></tr>
-    </table>`;
+    const weekRows = rows.filter(r => r.date >= fromStr && r.date <= toStr);
+    return { rows: weekRows, info, fromStr, toStr };
+}
+
+/* ====== VISA VECKOSUMMARY I TABBELLEN NEDTILL ====== */
+function renderWeek() {
+    const { rows, info, fromStr, toStr } = getCurrentWeekRows();
+    const weekInfoEl = document.getElementById("weekInfo");
+    weekInfoEl.textContent = `Vecka ${info.week} – period ${fromStr} till ${toStr}`;
+
+    // skapar summering per dag
+    const days = [
+        { label: "Mån", hours: 0, mil: 0 },
+        { label: "Tis", hours: 0, mil: 0 },
+        { label: "Ons", hours: 0, mil: 0 },
+        { label: "Tors", hours: 0, mil: 0 },
+        { label: "Fre", hours: 0, mil: 0 }
+    ];
+
+    rows.forEach(r => {
+        const d = new Date(r.date + "T00:00:00");
+        const weekday = d.getDay(); // 1=mån, etc
+        const idx = weekday - 1;
+        if (idx >= 0 && idx <= 4) {
+            days[idx].hours += Number(r.hours || 0);
+            days[idx].mil += Number(r.mil || 0);
+        }
+    });
+
+    let html = `<table>
+        <tr><th>Dag</th><th>Timmar</th><th>Mil</th></tr>`;
+    let totalHours = 0;
+    let totalMil = 0;
+
+    days.forEach(d => {
+        html += `<tr>
+            <td>${d.label}</td>
+            <td>${d.hours.toFixed(2)}</td>
+            <td>${d.mil.toFixed(1)}</td>
+        </tr>`;
+        totalHours += d.hours;
+        totalMil += d.mil;
+    });
+
+    html += `<tr>
+        <th>Summa vecka</th>
+        <th>${totalHours.toFixed(2)}</th>
+        <th>${totalMil.toFixed(1)}</th>
+    </tr>`;
+
+    html += `</table>`;
 
     document.getElementById("weekTable").innerHTML = html;
 }
 
-renderWeek();
-
-/* PDF (placeholder) */
+/* ====== SKAPA PDF ====== */
 function createPDF() {
-    alert("PDF-funktionen är oförändrad.");
+    const { rows, info, fromStr, toStr } = getCurrentWeekRows();
+
+    if (!rows.length) {
+        alert("Det finns inga rader sparade för denna vecka.");
+        return;
+    }
+
+    let jsPDFConstructor = null;
+    if (window.jspdf && window.jspdf.jsPDF) {
+        jsPDFConstructor = window.jspdf.jsPDF;
+    } else if (window.jsPDF) {
+        jsPDFConstructor = window.jsPDF;
+    }
+
+    if (!jsPDFConstructor) {
+        alert("PDF-biblioteket kunde inte laddas. Kontrollera internetuppkoppling.");
+        return;
+    }
+
+    const doc = new jsPDFConstructor();
+
+    doc.setFontSize(16);
+    doc.text("Tidsrapport", 14, 15);
+
+    doc.setFontSize(11);
+    doc.text(`Vecka: ${info.week}`, 14, 22);
+    doc.text(`Period: ${fromStr} till ${toStr}`, 14, 28);
+
+    let totalHours = 0;
+    let totalMil = 0;
+    rows.forEach(r => {
+        totalHours += Number(r.hours || 0);
+        totalMil += Number(r.mil || 0);
+    });
+
+    doc.text(`Antal rader: ${rows.length}`, 14, 34);
+    doc.text(`Summa timmar: ${totalHours.toFixed(2)}`, 14, 40);
+    doc.text(`Summa mil: ${totalMil.toFixed(1)}`, 14, 46);
+
+    let y = 56;
+    doc.setFontSize(10);
+    doc.text("Datum", 14, y);
+    doc.text("Kund / Projekt", 40, y);
+    doc.text("Timmar", 140, y);
+    doc.text("Mil", 165, y);
+    doc.text("Beskrivning", 14, y + 6);
+
+    y += 12;
+
+    rows.forEach(r => {
+        if (y > 270) {
+            doc.addPage();
+            y = 20;
+        }
+
+        const descLines = doc.splitTextToSize(r.desc || "", 180);
+
+        doc.text(r.date, 14, y);
+        doc.text((r.project || "").substring(0, 50), 40, y);
+        doc.text(Number(r.hours || 0).toFixed(2), 140, y);
+        doc.text(Number(r.mil || 0).toFixed(1), 165, y);
+
+        if (descLines.length) {
+            doc.text(descLines, 14, y + 6);
+            y += 6 + (descLines.length * 4);
+        } else {
+            y += 8;
+        }
+    });
+
+    const filename = `tidsrapport-vecka-${String(info.week).padStart(2, "0")}.pdf`;
+    doc.save(filename);
 }
 
-/* EMAIL */
+/* ====== SKICKA MEJL MED INFO (INGEN PDF-TEXT) ====== */
 function emailPDF() {
-    const mail = localStorage.getItem("savedEmail") || "";
-    let subject = "Veckorapport";
-    let body = "Här kommer veckans rapport.\n\n(Bifoga PDF-filen du sparat.)";
-    window.location.href = `mailto:${mail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const savedMail = (localStorage.getItem("savedEmail") || "").trim();
+    if (!savedMail) {
+        alert("Fyll i en standardmottagare i menyn först.");
+        toggleMenu();
+        return;
+    }
+
+    const { rows, info, fromStr, toStr } = getCurrentWeekRows();
+    if (!rows.length) {
+        alert("Det finns inga rader sparade för denna vecka.");
+        return;
+    }
+
+    let totalHours = 0;
+    let totalMil = 0;
+    rows.forEach(r => {
+        totalHours += Number(r.hours || 0);
+        totalMil += Number(r.mil || 0);
+    });
+
+    const subject = `Tidsrapport vecka ${info.week} (${fromStr} - ${toStr})`;
+
+    let body = "";
+    body += "Här kommer veckans tidsrapport.\n\n";
+    body += `Vecka: ${info.week}\n`;
+    body += `Period: ${fromStr} till ${toStr}\n`;
+    body += `Antal rader: ${rows.length}\n`;
+    body += `Summa timmar: ${totalHours.toFixed(2)}\n`;
+    body += `Summa mil: ${totalMil.toFixed(1)}\n\n`;
+
+    body += "Rader:\n";
+    rows.forEach(r => {
+        body += `- ${r.date} | Kund: ${r.project} | Timmar: ${Number(r.hours || 0).toFixed(2)} | Mil: ${Number(r.mil || 0).toFixed(1)} | ${r.desc || ""}\n`;
+    });
+
+    body += "\nVänliga hälsningar\n";
+
+    const mailto = `mailto:${encodeURIComponent(savedMail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
 }
+
+/* INIT – sätt dagens datum i datumfältet och rendera vecka */
+(function init() {
+    const today = new Date();
+    document.getElementById("dateInput").value = formatDate(today);
+    renderWeek();
+})();
 </script>
 
 </body>
