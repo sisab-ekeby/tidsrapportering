@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Sisab – Tidsrapportering</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#020617" />
   <style>
     :root {
       --bg-body-light: #f4f4f5;
@@ -16,8 +17,10 @@
       --text-main-dark: #e5e7eb;
       --border-dark: #1f2937;
 
-      --primary: #2563eb;
-      --danger: #dc2626;
+      --primary: #2563eb;   /* blå – Rapportera tid */
+      --danger: #dc2626;    /* röd – Rensa */
+      --success: #16a34a;   /* grön – Skapa PDF */
+      --neutral: #6b7280;   /* grå – Spara tidsrad */
     }
 
     html {
@@ -69,7 +72,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .top-title {
@@ -93,15 +96,16 @@
     label {
       display: block;
       font-size: 13px;
-      margin-bottom: 3px;
+      margin-bottom: 1px; /* tajtare mot fältet */
       font-weight: 600;
     }
 
     .form-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 6px;
+      column-gap: 10px;
+      row-gap: 2px;      /* mindre i höjdled */
+      margin-bottom: 2px;/* mindre mellan raderna */
     }
 
     .form-row > div {
@@ -112,7 +116,7 @@
     input, select, textarea {
       width: 100%;
       box-sizing: border-box;
-      padding: 6px 8px;
+      padding: 3px 7px;  /* tunnare fält */
       border-radius: 8px;
       border: 1px solid;
       font-size: 14px;
@@ -137,13 +141,13 @@
     }
 
     textarea {
-      min-height: 60px;
+      min-height: 56px;
       resize: vertical;
     }
 
     button {
       border: none;
-      padding: 8px 16px;
+      padding: 7px 14px;
       border-radius: 999px;
       cursor: pointer;
       font-size: 14px;
@@ -163,6 +167,22 @@
     .btn-danger {
       background: var(--danger);
       color: #ffffff;
+    }
+
+    .btn-success {
+      background: var(--success);
+      color: #ffffff;
+    }
+
+    .btn-neutral {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    body.theme-dark .btn-neutral {
+      background: #111827;
+      color: #e5e7eb;
+      border: 1px solid #4b5563;
     }
 
     .btn-secondary {
@@ -185,6 +205,12 @@
 
     .btn-chip.active {
       outline: 2px solid var(--primary);
+    }
+
+    .btn-small {
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 999px;
     }
 
     .icon-button {
@@ -211,7 +237,7 @@
     }
 
     .actions {
-      margin-top: 8px;
+      margin-top: 6px;
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
@@ -306,7 +332,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 8px;
+      margin-top: 6px;
       font-size: 13px;
     }
 
@@ -351,9 +377,9 @@
     }
 
     .week-section {
-      margin-top: 14px;
+      margin-top: 8px;
       border-top: 1px solid;
-      padding-top: 10px;
+      padding-top: 6px;
     }
 
     body.theme-dark .week-section {
@@ -414,7 +440,7 @@
             <input type="email" id="emailTo" placeholder="t.ex. ekonomi@dinkund.se" />
           </div>
         </div>
-        <p style="font-size:12px;opacity:0.75;margin-top:4px;">
+        <p style="font-size:12px;opacity:0.75;margin-top:2px;">
           Adressen sparas automatiskt på denna enhet och används när du trycker på <strong>Rapportera tid</strong>.
         </p>
       </div>
@@ -449,8 +475,8 @@
             <input type="date" id="filterTo" />
           </div>
         </div>
-        <div style="margin-bottom:8px;">
-          <button type="button" id="applyFilter" class="btn-secondary">Filtrera</button>
+        <div style="margin-bottom:6px;">
+          <button type="button" id="applyFilter" class="btn-secondary btn-small">Filtrera</button>
         </div>
 
         <div style="max-height: 45vh; overflow:auto; border-radius:12px; border:1px solid;">
@@ -500,6 +526,13 @@
           </div>
         </div>
 
+        <!-- Rensa-knapp under datum (kalendern) -->
+        <div class="form-row">
+          <div>
+            <button type="button" id="clearAll" class="btn-danger btn-small">Rensa alla poster</button>
+          </div>
+        </div>
+
         <div class="form-row">
           <div>
             <label for="project">Kund / Projekt</label>
@@ -523,13 +556,12 @@
         </div>
 
         <div class="actions">
-          <button type="submit" class="btn-primary">Spara tidsrad</button>
-          <button type="button" id="clearAll" class="btn-danger">Rensa alla poster</button>
-          <button type="button" id="createPdf" class="btn-secondary">Skapa PDF</button>
-          <button type="button" id="emailPdf" class="btn-secondary">Rapportera tid</button>
+          <button type="submit" class="btn-neutral">Spara tidsrad</button>
+          <button type="button" id="createPdf" class="btn-success">Skapa PDF</button>
+          <button type="button" id="emailPdf" class="btn-primary">Rapportera tid</button>
         </div>
 
-        <p style="font-size:12px;opacity:0.7;margin-top:6px;">
+        <p style="font-size:12px;opacity:0.7;margin-top:4px;">
           <strong>Skapa PDF</strong> – sparar en PDF på din enhet.<br>
           <strong>Rapportera tid</strong> – din veckorapport öppnas i ett mejl till kontoret.
         </p>
@@ -563,12 +595,12 @@
     </div>
   </div>
 
-  <p style="text-align:center;margin:10px 0 16px 0;font-size:12px;opacity:0.6;">
+  <p style="text-align:center;margin:8px 0 12px 0;font-size:12px;opacity:0.6;">
     produce by Reklamgiganten.com
   </p>
 
-  <!-- jsPDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-v2V0Q8GvYDL8+/zTzubrC+5FHbQKJuHzyqfXhZ07z1uVciTdWkY0vNagGX26kS01QH1tTzQgq6GfJ0QYCF3qkQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- jsPDF utan integrity (för att undvika blockering) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <script>
     const STORAGE_KEY = "tidsrapportering_entries_v1";
@@ -668,8 +700,7 @@
         const tdDelete = document.createElement("td");
         const btn = document.createElement("button");
         btn.textContent = "X";
-        btn.className = "btn-secondary";
-        btn.style.padding = "2px 6px";
+        btn.className = "btn-secondary btn-small";
         btn.onclick = () => {
           const all = loadEntries();
           all.splice(index, 1);
@@ -799,32 +830,61 @@
       document.getElementById("weekTotalKm").textContent = totalKm.toFixed(1);
     }
 
+    // Hämta period för PDF/mejl (använder filter om satta, annars min/max datum)
+    function getPeriodForEntries(entries) {
+      let fromDate = document.getElementById("filterFrom").value;
+      let toDate = document.getElementById("filterTo").value;
+
+      const dates = entries
+        .map(e => e.date)
+        .filter(Boolean)
+        .sort();
+
+      if (!fromDate && dates.length > 0) {
+        fromDate = dates[0];
+      }
+      if (!toDate && dates.length > 0) {
+        toDate = dates[dates.length - 1];
+      }
+
+      return {
+        from: fromDate || "-",
+        to: toDate || "-"
+      };
+    }
+
     function buildPdf(entries) {
-      if (!window.jspdf) {
+      let jsPDFConstructor = null;
+
+      if (window.jspdf && window.jspdf.jsPDF) {
+        jsPDFConstructor = window.jspdf.jsPDF;
+      } else if (window.jsPDF) {
+        jsPDFConstructor = window.jsPDF;
+      }
+
+      if (!jsPDFConstructor) {
         alert("PDF-biblioteket kunde inte laddas. Kontrollera internetuppkoppling.");
         return null;
       }
 
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
+      const doc = new jsPDFConstructor();
 
       const title = "Tidsrapport";
       doc.setFontSize(16);
       doc.text(title, 14, 15);
 
       doc.setFontSize(10);
-      const fromDate = document.getElementById("filterFrom").value;
-      const toDate = document.getElementById("filterTo").value;
       const projectFilter = document.getElementById("filterProject").value.trim();
+      const period = getPeriodForEntries(entries);
 
       let subtitleLines = [];
-      if (fromDate || toDate) subtitleLines.push(`Period: ${fromDate || "-"} till ${toDate || "-"}`);
+      subtitleLines.push(`Period: ${period.from} till ${period.to}`);
       if (projectFilter) subtitleLines.push(`Projektfilter: ${projectFilter}`);
       if (subtitleLines.length === 0) subtitleLines.push("Ingen filtrering (alla rader).");
 
       doc.text(subtitleLines.join(" | "), 14, 22);
 
-      let y = 32;
+      let y = 30;
       doc.setFontSize(10);
       doc.text("Datum", 14, y);
       doc.text("Projekt", 40, y);
@@ -900,16 +960,15 @@
 
       const totalHours = entries.reduce((sum, e) => sum + Number(e.hours || 0), 0);
       const totalKm = entries.reduce((sum, e) => sum + Number(e.km || 0), 0);
-      const fromDate = document.getElementById("filterFrom").value || "-";
-      const toDate = document.getElementById("filterTo").value || "-";
+      const period = getPeriodForEntries(entries);
       const projectFilter = document.getElementById("filterProject").value.trim();
       const { week } = getCurrentWeekInfo();
       const filename = `tidsrapport-vecka-${String(week).padStart(2,"0")}.pdf`;
 
-      const subject = `Tidsrapport vecka ${week} (${fromDate} - ${toDate})`;
+      const subject = `Tidsrapport vecka ${week} (${period.from} - ${period.to})`;
       let body = "Hej!\n\nHär kommer veckans tidsrapport.\n\n";
       if (projectFilter) body += `Projekt: ${projectFilter}\n`;
-      body += `Period: ${fromDate} till ${toDate}\n`;
+      body += `Period: ${period.from} till ${period.to}\n`;
       body += `Antal rader: ${entries.length}\n`;
       body += `Summa timmar: ${totalHours.toFixed(2)}\n`;
       body += `Summa mil: ${totalKm.toFixed(1)}\n\n`;
